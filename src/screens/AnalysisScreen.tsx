@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { FileSearch, FileCode2, Play, Sparkles, Layers, Upload } from 'lucide-react'
+import JiraCode from '../components/JiraCode'
 import GherkinCode from '../components/GherkinCode'
 import ScanBeam from '../components/ScanBeam'
 
@@ -63,14 +64,9 @@ export default function AnalysisScreen({ onGenerate }: { onGenerate: () => void 
               <p className="text-[11px] text-zinc-600">Ticket ID, summary & acceptance criteria</p>
             </div>
           </div>
-          <textarea
-            value={jira}
-            onChange={(e) => setJira(e.target.value)}
-            rows={16}
-            spellCheck={false}
-            className="w-full bg-transparent font-mono text-sm text-zinc-300 outline-none resize-none p-5 leading-relaxed"
-            placeholder="Paste Jira ticket content..."
-          />
+          <div className="editor-surface h-[340px]">
+            <JiraCode code={jira} editable onChange={setJira} />
+          </div>
           <div className="flex items-center justify-between px-5 py-3 border-t border-white/5 text-xs text-zinc-600">
             <span className="font-mono">{jira.trim().split('\n').length} lines</span>
             <span>{jira.length} chars</span>
@@ -106,7 +102,7 @@ export default function AnalysisScreen({ onGenerate }: { onGenerate: () => void 
           </div>
 
           {mode === 'edit' ? (
-            <div className="min-h-[340px]">
+            <div className="editor-surface h-[340px]">
               <GherkinCode code={feature} editable onChange={setFeature} />
             </div>
           ) : (

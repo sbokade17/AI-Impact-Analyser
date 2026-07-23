@@ -1,50 +1,53 @@
 import { useMemo, useRef } from 'react'
 
-const keywords = ['Feature', 'Scenario', 'Scenario Outline', 'Given', 'When', 'Then', 'And', 'But', 'Background', 'Examples']
+const sectionLabels = ['Ticket:', 'Summary:', 'Acceptance Criteria:']
 
 function highlightLine(line: string): { cls: string; text: string }[] {
   const trimmed = line.trimStart()
   const leading = line.length - trimmed.length
   const spaces = line.substring(0, leading)
 
-  // Comment
-  if (trimmed.startsWith('#')) return [{ cls: 'gh-comment', text: line }]
+  if (trimmed === '') return [{ cls: '', text: line }]
 
-  // Find keyword
-  const kw = keywords.find((k) => trimmed.startsWith(k))
-  if (kw) {
-    const rest = trimmed.substring(kw.length)
-    // Highlight strings in rest
-    const parts: { cls: string; text: string }[] = [{ cls: '', text: spaces }, { cls: 'gh-keyword', text: kw }]
-    // Parse strings
+  const section = sectionLabels.find((label) => trimmed.startsWith(label))
+  if (section) {
+    return [
+      { cls: '', text: spaces },
+      { cls: 'jira-label', text: section },
+      { cls: 'jira-text', text: trimmed.substring(section.length) },
+    ]
+  }
+
+  if (trimmed.startsWith('-')) {
+    const rest = trimmed.substring(1)
+    const parts: { cls: string; text: string }[] = [{ cls: '', text: spaces }, { cls: 'jira-bullet', text: '-' }]
     const stringRegex = /("[^"]*")/g
     let last = 0
     let match
     while ((match = stringRegex.exec(rest)) !== null) {
-      if (match.index > last) parts.push({ cls: 'gh-text', text: rest.substring(last, match.index) })
-      parts.push({ cls: 'gh-string', text: match[0] })
+      if (match.index > last) parts.push({ cls: 'jira-text', text: rest.substring(last, match.index) })
+      parts.push({ cls: 'jira-string', text: match[0] })
       last = match.index + match[0].length
     }
-    if (last < rest.length) parts.push({ cls: 'gh-text', text: rest.substring(last) })
+    if (last < rest.length) parts.push({ cls: 'jira-text', text: rest.substring(last) })
     return parts
   }
 
-  // Plain line - highlight strings
   const parts: { cls: string; text: string }[] = [{ cls: '', text: spaces }]
   const stringRegex = /("[^"]*")/g
   let last = 0
   let match
   while ((match = stringRegex.exec(trimmed)) !== null) {
-    if (match.index > last) parts.push({ cls: 'gh-text', text: trimmed.substring(last, match.index) })
-    parts.push({ cls: 'gh-string', text: match[0] })
+    if (match.index > last) parts.push({ cls: 'jira-text', text: trimmed.substring(last, match.index) })
+    parts.push({ cls: 'jira-string', text: match[0] })
     last = match.index + match[0].length
   }
-  if (last < trimmed.length) parts.push({ cls: 'gh-text', text: trimmed.substring(last) })
-  if (parts.length === 1) parts[0] = { cls: 'gh-text', text: line }
+  if (last < trimmed.length) parts.push({ cls: 'jira-text', text: trimmed.substring(last) })
+  if (parts.length === 1) parts[0] = { cls: 'jira-text', text: line }
   return parts
 }
 
-export default function GherkinCode({ code, editable = false, onChange }: { code: string; editable?: boolean; onChange?: (v: string) => void }) {
+export default function JiraCode({ code, editable = false, onChange }: { code: string; editable?: boolean; onChange?: (v: string) => void }) {
   const lines = useMemo(() => code.split('\n'), [code])
   const previewRef = useRef<HTMLPreElement>(null)
   const editorRef = useRef<HTMLTextAreaElement>(null)
@@ -68,7 +71,7 @@ export default function GherkinCode({ code, editable = false, onChange }: { code
   if (editable && onChange) {
     return (
       <div className="editor-shell relative h-full overflow-hidden rounded-b-2xl">
-        <pre ref={previewRef} className="editor-preview absolute inset-0 overflow-hidden font-mono text-sm leading-relaxed p-4 pointer-events-none select-none">
+        <pre ref={previewRef} className="editor-preview absolute inset-0 overflow-hidden font-mono text-sm leading-relaxed p-5 pointer-events-none select-none">
           {renderLines()}
         </pre>
         <textarea
@@ -81,7 +84,7 @@ export default function GherkinCode({ code, editable = false, onChange }: { code
             previewRef.current.scrollLeft = editorRef.current.scrollLeft
           }}
           spellCheck={false}
-          className="relative z-10 w-full h-full min-h-[340px] bg-transparent font-mono text-sm leading-relaxed outline-none resize-none p-4 text-transparent caret-ember overflow-auto"
+          className="relative z-10 w-full h-full min-h-[340px] bg-transparent font-mono text-sm leading-relaxed outline-none resize-none p-5 text-transparent caret-ember overflow-auto"
           style={{ tabSize: 2, WebkitTextFillColor: 'transparent' }}
         />
       </div>

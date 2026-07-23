@@ -16,13 +16,20 @@ const navItems: { id: Screen; label: string; icon: typeof Activity }[] = [
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>('analysis')
-  const [theme, setTheme] = useState<Theme>('dark')
+  const [theme, setTheme] = useState<Theme>(() => {
+    if (typeof window === 'undefined') {
+      return 'light'
+    }
+
+    const stored = localStorage.getItem('theme')
+    return stored === 'dark' ? 'dark' : 'light'
+  })
 
   useEffect(() => {
     const stored = localStorage.getItem('theme')
-    const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches
-    const initialTheme: Theme = stored === 'light' || stored === 'dark' ? stored : prefersLight ? 'light' : 'dark'
-    setTheme(initialTheme)
+    if (stored === 'light' || stored === 'dark') {
+      setTheme(stored)
+    }
   }, [])
 
   useEffect(() => {
@@ -41,16 +48,6 @@ export default function App() {
       {/* Floating capsule nav */}
       <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 animate-spring-in">
         <div className="glass-strong rounded-full p-1.5 flex items-center gap-1 shadow-2xl">
-          {/* Brand dot */}
-          <div className="flex items-center gap-2 pl-3 pr-2">
-            <div className="relative">
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-ember to-amber2 flex items-center justify-center">
-                <Activity className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
-              </div>
-              <div className="absolute -inset-0.5 rounded-lg bg-ember/30 blur-sm -z-10" />
-            </div>
-          </div>
-          <div className="w-px h-6 bg-white/10" />
           {/* Tabs */}
           {navItems.map((item) => {
             const Icon = item.icon

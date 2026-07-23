@@ -196,12 +196,83 @@ body {
   border-color: rgba(9,9,11,0.2);
 }
 
+[data-theme='light'] .input {
+  color: #111827;
+  background: rgba(255,255,255,0.92);
+  border-color: rgba(15,23,42,0.12);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.8) inset;
+}
+
+[data-theme='light'] .input::placeholder {
+  color: #94a3b8;
+}
+
+[data-theme='light'] .input:focus {
+  border-color: rgba(255,69,58,0.45);
+  box-shadow: 0 0 0 3px rgba(255,69,58,0.1);
+  background: rgba(255,255,255,1);
+}
+
+[data-theme='light'] .label {
+  color: #64748b;
+}
+
+[data-theme='light'] .text-zinc-300,
+[data-theme='light'] .text-zinc-200 {
+  color: #1f2937 !important;
+}
+
+[data-theme='light'] .text-zinc-600 {
+  color: #64748b !important;
+}
+
 /* ---------- Code syntax (Gherkin) ---------- */
 .gh-keyword { color: #ff6b9d; font-weight: 600; }
 .gh-string { color: #30d158; }
 .gh-comment { color: #52525b; font-style: italic; }
 .gh-tag { color: #ff9f0a; }
 .gh-text { color: #d4d4d8; }
+
+[data-theme='light'] .gh-keyword { color: #c026d3; }
+[data-theme='light'] .gh-string { color: #0f766e; }
+[data-theme='light'] .gh-comment { color: #94a3b8; }
+[data-theme='light'] .gh-tag { color: #d97706; }
+[data-theme='light'] .gh-text { color: #334155; }
+
+.jira-label { color: #ff8a80; font-weight: 700; }
+.jira-string { color: #4ade80; }
+.jira-bullet { color: #ffcf5a; font-weight: 700; }
+.jira-text { color: #cbd5e1; }
+
+[data-theme='light'] .jira-label { color: #b91c1c; }
+[data-theme='light'] .jira-string { color: #0f766e; }
+[data-theme='light'] .jira-bullet { color: #d97706; }
+[data-theme='light'] .jira-text { color: #1e293b; }
+
+.editor-surface {
+  background: transparent;
+}
+
+[data-theme='light'] .editor-surface {
+  background: rgba(255,255,255,0.82);
+}
+
+.editor-shell {
+  background: transparent;
+}
+
+[data-theme='light'] .editor-shell {
+  background: linear-gradient(to bottom, rgba(255,255,255,0.9), rgba(248,250,252,0.82));
+}
+
+.editor-preview {
+  color: inherit;
+}
+
+[data-theme='dark'] .editor-surface,
+[data-theme='dark'] .editor-shell {
+  background: transparent;
+}
 
 /* ---------- Diff viewer ---------- */
 .diff-add { background: rgba(48,209,88,0.08); border-left: 2px solid #30d158; }
