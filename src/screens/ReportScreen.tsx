@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { ArrowLeft, FileCode2, Database, Workflow, FlaskConical, Lightbulb, Package, TriangleAlert as AlertTriangle, ChevronRight, Download, Share2, GitCommitVertical as GitCommit, Boxes, Sparkles, Clock, Hash, Layers, ScanLine } from 'lucide-react'
+import { jsPDF } from 'jspdf'
+import autoTable from 'jspdf-autotable'
 import type { ReportData } from '../data/mockReport'
 import { riskConfig } from '../components/RiskGauge'
 import RiskGauge from '../components/RiskGauge'
@@ -26,7 +28,193 @@ const changeStyles: Record<string, string> = {
 export default function ReportScreen({ report, onBack }: { report: ReportData; onBack: () => void }) {
   const [tab, setTab] = useState<Tab>('files')
   const [selectedFile, setSelectedFile] = useState(report.affectedFiles[0])
+  const [exporting, setExporting] = useState(false)
   const cfg = riskConfig[report.riskLevel]
+
+  const exportReport = async () => {
+    if (exporting) {
+      return
+    }
+
+    setExporting(true)
+
+    try {
+      const doc = new jsPDF({ unit: 'pt', format: 'a4' })
+      const pageWidth = doc.internal.pageSize.getWidth()
+      const accent = [255, 69, 58] as const
+      const ink = [17, 24, 39] as const
+      const muted = [107, 114, 128] as const
+
+      // Cover block
+      doc.setFillColor(11, 15, 27)
+      doc.rect(0, 0, pageWidth, 180, 'F')
+      doc.setDrawColor(accent[0], accent[1], accent[2])
+      doc.setLineWidth(2)
+      doc.line(40, 138, pageWidth - 40, 138)
+      doc.setTextColor(255, 255, 255)
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(28)
+      doc.text('Impact Analysis Report', 40, 72)
+      doc.setFontSize(12)
+      doc.setFont('helvetica', 'normal')
+      doc.text(`Ticket ${report.ticketId} • ${report.generatedAt}`, 40, 102)
+      doc.setFillColor(255, 255, 255)
+      doc.roundedRect(pageWidth - 170, 46, 130, 36, 8, 8, 'F')
+      doc.setTextColor(ink[0], ink[1], ink[2])
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(13)
+      doc.text(`${report.riskLevel} Risk`, pageWidth - 148, 68)
+
+      const gaugeImage = drawRiskGaugePng(report.riskScore, report.riskLevel)
+      doc.addImage(gaugeImage, 'PNG', 40, 210, 150, 150)
+
+      const scoreBarsImage = drawScoreBarsPng(report.scoreBreakdown)
+      doc.addImage(scoreBarsImage, 'PNG', 220, 220, pageWidth - 260, 130)
+
+      doc.setTextColor(ink[0], ink[1], ink[2])
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(14)
+      doc.text('Executive Summary', 40, 390)
+      doc.setTextColor(muted[0], muted[1], muted[2])
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(11)
+      const summaryLines = doc.splitTextToSize(report.summary, pageWidth - 80)
+      doc.text(summaryLines, 40, 412)
+
+      autoTable(doc, {
+        startY: 470,
+        head: [['Metric', 'Value']],
+        body: [
+          ['Risk Score', `${report.riskScore}/100`],
+          ['Affected Files', String(report.affectedFiles.length)],
+          ['Database Operations', String(report.dbChanges.length)],
+          ['Functional Areas', String(report.functionalAreas.length)],
+          ['Test Cases', String(report.testCases.length)],
+        ],
+        styles: { fontSize: 10, cellPadding: 7, textColor: 35 },
+        headStyles: { fillColor: [31, 41, 55], textColor: 255, fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [249, 250, 251] },
+        margin: { left: 40, right: 40 },
+      })
+
+      doc.addPage()
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(18)
+      doc.setTextColor(ink[0], ink[1], ink[2])
+      doc.text('Technical Impact', 40, 54)
+
+      autoTable(doc, {
+        startY: 72,
+        head: [['Path', 'Type', 'Change', 'Risk', 'Lines', 'Reason']],
+        body: report.affectedFiles.map((f) => [f.path, f.type, f.change, f.risk, String(f.linesChanged), f.reason]),
+        styles: { fontSize: 9, cellPadding: 6, textColor: 35, overflow: 'linebreak' },
+        headStyles: { fillColor: [31, 41, 55], textColor: 255, fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [249, 250, 251] },
+        margin: { left: 40, right: 40 },
+        columnStyles: {
+          0: { cellWidth: 145 },
+          5: { cellWidth: 170 },
+        },
+      })
+
+      const filesTableY = (doc as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 220
+      autoTable(doc, {
+        startY: filesTableY + 18,
+        head: [['Table', 'Operation', 'Risk', 'Migration', 'Detail']],
+        body: report.dbChanges.map((c) => [c.table, c.operation, c.risk, c.migration, c.detail]),
+        styles: { fontSize: 9, cellPadding: 6, textColor: 35, overflow: 'linebreak' },
+        headStyles: { fillColor: [31, 41, 55], textColor: 255, fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [249, 250, 251] },
+        margin: { left: 40, right: 40 },
+        columnStyles: {
+          4: { cellWidth: 215 },
+        },
+      })
+
+      doc.addPage()
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(18)
+      doc.setTextColor(ink[0], ink[1], ink[2])
+      doc.text('Business Impact And Quality Plan', 40, 54)
+
+      autoTable(doc, {
+        startY: 72,
+        head: [['Functional Area', 'Impact', 'Description', 'Affected Flows']],
+        body: report.functionalAreas.map((a) => [a.name, a.impact, a.description, a.affectedFlows.join(', ')]),
+        styles: { fontSize: 9, cellPadding: 6, textColor: 35, overflow: 'linebreak' },
+        headStyles: { fillColor: [31, 41, 55], textColor: 255, fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [249, 250, 251] },
+        margin: { left: 40, right: 40 },
+        columnStyles: {
+          2: { cellWidth: 170 },
+          3: { cellWidth: 180 },
+        },
+      })
+
+      const functionalTableY = (doc as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 220
+      autoTable(doc, {
+        startY: functionalTableY + 18,
+        head: [['Test ID', 'Title', 'Feature', 'Type', 'Status']],
+        body: report.testCases.map((t) => [t.id, t.title, t.feature, t.type, t.status]),
+        styles: { fontSize: 9, cellPadding: 6, textColor: 35, overflow: 'linebreak' },
+        headStyles: { fillColor: [31, 41, 55], textColor: 255, fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [249, 250, 251] },
+        margin: { left: 40, right: 40 },
+      })
+
+      doc.addPage()
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(18)
+      doc.setTextColor(ink[0], ink[1], ink[2])
+      doc.text('Recommendations And Dependencies', 40, 54)
+
+      autoTable(doc, {
+        startY: 72,
+        head: [['Priority', 'Category', 'Recommendation']],
+        body: report.recommendations.map((r) => [r.priority, r.category, r.text]),
+        styles: { fontSize: 9, cellPadding: 6, textColor: 35, overflow: 'linebreak' },
+        headStyles: { fillColor: [31, 41, 55], textColor: 255, fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [249, 250, 251] },
+        margin: { left: 40, right: 40 },
+        didParseCell: (data) => {
+          if (data.section === 'body' && data.column.index === 0) {
+            const p = String(data.cell.raw)
+            if (p === 'P0') data.cell.styles.textColor = [185, 28, 28]
+            if (p === 'P1') data.cell.styles.textColor = [180, 83, 9]
+            if (p === 'P2') data.cell.styles.textColor = [3, 105, 161]
+            data.cell.styles.fontStyle = 'bold'
+          }
+        },
+      })
+
+      const recTableY = (doc as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 220
+      autoTable(doc, {
+        startY: recTableY + 18,
+        head: [['Package', 'Version', 'Reason']],
+        body: report.dependencies.map((d) => [d.name, d.version, d.reason]),
+        styles: { fontSize: 9, cellPadding: 6, textColor: 35, overflow: 'linebreak' },
+        headStyles: { fillColor: [31, 41, 55], textColor: 255, fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [249, 250, 251] },
+        margin: { left: 40, right: 40 },
+      })
+
+      const pageCount = doc.getNumberOfPages()
+      for (let i = 1; i <= pageCount; i += 1) {
+        doc.setPage(i)
+        const h = doc.internal.pageSize.getHeight()
+        doc.setFont('helvetica', 'normal')
+        doc.setFontSize(9)
+        doc.setTextColor(120, 120, 120)
+        doc.text(`AI Impact Analyser • ${report.ticketId}`, 40, h - 20)
+        doc.text(`Page ${i} of ${pageCount}`, pageWidth - 96, h - 20)
+      }
+
+      const safeTicket = report.ticketId.replace(/[^a-zA-Z0-9_-]/g, '_')
+      doc.save(`${safeTicket || 'impact-report'}.pdf`)
+    } finally {
+      setExporting(false)
+    }
+  }
 
   const counts: Record<Tab, number> = {
     files: report.affectedFiles.length,
@@ -55,7 +243,9 @@ export default function ReportScreen({ report, onBack }: { report: ReportData; o
         </div>
         <div className="flex gap-2">
           <button className="btn-ghost"><Share2 className="w-4 h-4" /> Share</button>
-          <button className="btn-ghost"><Download className="w-4 h-4" /> Export</button>
+          <button onClick={exportReport} className="btn-ghost btn-ghost-strong" disabled={exporting}>
+            <Download className="w-4 h-4" /> {exporting ? 'Exporting...' : 'Export'}
+          </button>
         </div>
       </div>
 
@@ -308,4 +498,125 @@ function QuickStat({ value, label }: { value: number; label: string }) {
       <span className="text-xs text-zinc-500">{label}</span>
     </div>
   )
+}
+
+function drawRiskGaugePng(score: number, level: 'High' | 'Medium' | 'Low') {
+  const size = 460
+  const canvas = document.createElement('canvas')
+  canvas.width = size
+  canvas.height = size
+  const ctx = canvas.getContext('2d')
+  if (!ctx) {
+    return ''
+  }
+
+  const center = size / 2
+  const radius = 165
+  const start = Math.PI * 0.75
+  const end = Math.PI * 2.25
+  const progress = start + (end - start) * Math.min(1, Math.max(0, score / 100))
+  const color = level === 'High' ? '#ff453a' : level === 'Medium' ? '#ff9f0a' : '#30d158'
+
+  ctx.clearRect(0, 0, size, size)
+  const bg = ctx.createLinearGradient(0, 0, size, size)
+  bg.addColorStop(0, '#0b1220')
+  bg.addColorStop(1, '#1f2937')
+  ctx.fillStyle = bg
+  ctx.fillRect(0, 0, size, size)
+
+  ctx.lineCap = 'round'
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)'
+  ctx.lineWidth = 26
+  ctx.beginPath()
+  ctx.arc(center, center, radius, start, end)
+  ctx.stroke()
+
+  ctx.strokeStyle = color
+  ctx.shadowColor = color
+  ctx.shadowBlur = 24
+  ctx.beginPath()
+  ctx.arc(center, center, radius, start, progress)
+  ctx.stroke()
+  ctx.shadowBlur = 0
+
+  ctx.fillStyle = '#ffffff'
+  ctx.textAlign = 'center'
+  ctx.font = '700 84px Helvetica'
+  ctx.fillText(String(score), center, center + 18)
+  ctx.font = '600 26px Helvetica'
+  ctx.fillText(`${level.toUpperCase()} RISK`, center, center + 64)
+
+  return canvas.toDataURL('image/png')
+}
+
+function drawScoreBarsPng(scoreBreakdown: { files: number; database: number; functional: number; tests: number }) {
+  const width = 980
+  const height = 320
+  const canvas = document.createElement('canvas')
+  canvas.width = width
+  canvas.height = height
+  const ctx = canvas.getContext('2d')
+  if (!ctx) {
+    return ''
+  }
+
+  const items = [
+    { label: 'Files', value: scoreBreakdown.files, color: '#ff453a' },
+    { label: 'Database', value: scoreBreakdown.database, color: '#ff9f0a' },
+    { label: 'Functional', value: scoreBreakdown.functional, color: '#30d158' },
+    { label: 'Tests', value: scoreBreakdown.tests, color: '#8b5cf6' },
+  ]
+
+  ctx.clearRect(0, 0, width, height)
+  ctx.fillStyle = '#ffffff'
+  ctx.fillRect(0, 0, width, height)
+  ctx.fillStyle = '#111827'
+  ctx.font = '700 34px Helvetica'
+  ctx.fillText('Score Breakdown', 28, 50)
+
+  const left = 28
+  const top = 84
+  const rowHeight = 54
+  const barX = 180
+  const maxBarWidth = width - barX - 44
+
+  items.forEach((item, i) => {
+    const y = top + i * rowHeight
+    const barWidth = Math.max(8, Math.round((item.value / 40) * maxBarWidth))
+
+    ctx.fillStyle = '#374151'
+    ctx.font = '600 22px Helvetica'
+    ctx.fillText(item.label, left, y + 24)
+
+    ctx.fillStyle = '#e5e7eb'
+    roundRect(ctx, barX, y, maxBarWidth, 18, 9)
+    ctx.fill()
+
+    const grad = ctx.createLinearGradient(barX, y, barX + barWidth, y)
+    grad.addColorStop(0, item.color)
+    grad.addColorStop(1, item.color)
+    ctx.fillStyle = grad
+    roundRect(ctx, barX, y, barWidth, 18, 9)
+    ctx.fill()
+
+    ctx.fillStyle = '#111827'
+    ctx.font = '700 18px Helvetica'
+    ctx.fillText(String(item.value), barX + maxBarWidth + 10, y + 16)
+  })
+
+  return canvas.toDataURL('image/png')
+}
+
+function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  ctx.beginPath()
+  ctx.moveTo(x + r, y)
+  ctx.lineTo(x + w - r, y)
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r)
+  ctx.lineTo(x + w, y + h - r)
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h)
+  ctx.lineTo(x + r, y + h)
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r)
+  ctx.lineTo(x, y + r)
+  ctx.quadraticCurveTo(x, y, x + r, y)
+  ctx.closePath()
 }

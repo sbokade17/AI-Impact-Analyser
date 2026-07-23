@@ -3,7 +3,31 @@
 @tailwind utilities;
 
 :root {
+  --app-bg: #09090b;
+  --app-fg: #e4e4e7;
+  --grid-line: rgba(255,255,255,0.025);
+  --spotlight: rgba(255,69,58,0.06);
+  --glass-bg: rgba(24, 24, 27, 0.6);
+  --glass-strong-bg: rgba(24, 24, 27, 0.85);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-strong-border: rgba(255, 255, 255, 0.1);
+  --scroll-thumb: rgba(255,255,255,0.08);
+  --scroll-thumb-hover: rgba(255,255,255,0.16);
   color-scheme: dark;
+}
+
+[data-theme='light'] {
+  --app-bg: #f6f7fb;
+  --app-fg: #18181b;
+  --grid-line: rgba(9,9,11,0.055);
+  --spotlight: rgba(255,69,58,0.09);
+  --glass-bg: rgba(255, 255, 255, 0.72);
+  --glass-strong-bg: rgba(255, 255, 255, 0.9);
+  --glass-border: rgba(9, 9, 11, 0.1);
+  --glass-strong-border: rgba(9, 9, 11, 0.14);
+  --scroll-thumb: rgba(9,9,11,0.2);
+  --scroll-thumb-hover: rgba(9,9,11,0.3);
+  color-scheme: light;
 }
 
 html, body, #root { height: 100%; }
@@ -11,8 +35,8 @@ html, body, #root { height: 100%; }
 body {
   margin: 0;
   font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
-  background: #09090b;
-  color: #e4e4e7;
+  background: var(--app-bg);
+  color: var(--app-fg);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -21,35 +45,57 @@ body {
 
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 10px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.16); }
+::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: var(--scroll-thumb-hover); }
 
 /* ---------- Ambient background ---------- */
 .bg-grid {
   background-image:
-    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
   background-size: 56px 56px;
 }
 
 .bg-spotlight {
-  background: radial-gradient(ellipse 60% 50% at 50% 30%, rgba(255,69,58,0.06), transparent 70%);
+  background: radial-gradient(ellipse 60% 50% at 50% 30%, var(--spotlight), transparent 70%);
 }
 
 /* ---------- Glass panels ---------- */
 .glass {
-  background: rgba(24, 24, 27, 0.6);
+  background: var(--glass-bg);
   backdrop-filter: blur(12px) saturate(140%);
   -webkit-backdrop-filter: blur(12px) saturate(140%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--glass-border);
 }
 
 .glass-strong {
-  background: rgba(24, 24, 27, 0.85);
+  background: var(--glass-strong-bg);
   backdrop-filter: blur(20px) saturate(160%);
   -webkit-backdrop-filter: blur(20px) saturate(160%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--glass-strong-border);
 }
+
+[data-theme='light'] .bg-obsidian { background-color: #f6f7fb !important; }
+[data-theme='light'] .text-white { color: #18181b !important; }
+[data-theme='light'] .text-zinc-700 { color: #3f3f46 !important; }
+[data-theme='light'] .text-zinc-600 { color: #52525b !important; }
+[data-theme='light'] .text-zinc-500 { color: #71717a !important; }
+[data-theme='light'] .text-zinc-400 { color: #3f3f46 !important; }
+[data-theme='light'] .text-zinc-300 { color: #27272a !important; }
+[data-theme='light'] .text-zinc-200 { color: #18181b !important; }
+[data-theme='light'] .hover\:text-zinc-300:hover { color: #27272a !important; }
+[data-theme='light'] .hover\:text-zinc-400:hover { color: #3f3f46 !important; }
+[data-theme='light'] .bg-black\/40 { background: rgba(255,255,255,0.68) !important; }
+[data-theme='light'] .bg-black\/30 { background: rgba(255,255,255,0.58) !important; }
+[data-theme='light'] .bg-black\/20 { background: rgba(255,255,255,0.52) !important; }
+[data-theme='light'] .bg-white\/10 { background: rgba(9,9,11,0.08) !important; }
+[data-theme='light'] .bg-white\/5 { background: rgba(9,9,11,0.05) !important; }
+[data-theme='light'] .border-white\/15 { border-color: rgba(9,9,11,0.18) !important; }
+[data-theme='light'] .border-white\/10 { border-color: rgba(9,9,11,0.14) !important; }
+[data-theme='light'] .border-white\/5 { border-color: rgba(9,9,11,0.1) !important; }
+[data-theme='light'] .hover\:bg-white\/5:hover { background: rgba(9,9,11,0.06) !important; }
+[data-theme='light'] .hover\:border-white\/10:hover { border-color: rgba(9,9,11,0.16) !important; }
+[data-theme='light'] .bg-transparent { background-color: transparent !important; }
 
 /* ---------- Risk glows ---------- */
 .glow-ember { box-shadow: 0 0 60px -10px rgba(255,69,58,0.35), 0 0 20px -5px rgba(255,69,58,0.2); }
@@ -91,6 +137,16 @@ body {
     color: #f4f4f5;
     border-color: rgba(255,255,255,0.14);
   }
+  .btn-ghost-strong {
+    color: #fafafa;
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(255,255,255,0.18);
+  }
+  .btn-ghost-strong:hover {
+    background: rgba(255,255,255,0.14);
+    color: #ffffff;
+    border-color: rgba(255,255,255,0.3);
+  }
   .input {
     @apply w-full rounded-xl px-4 py-3 text-zinc-200 transition-all duration-200;
     background: rgba(9,9,11,0.6);
@@ -109,6 +165,35 @@ body {
   .chip {
     @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold;
   }
+}
+
+[data-theme='light'] .btn-ghost {
+  color: #27272a;
+  background: rgba(255,255,255,0.8);
+  border-color: rgba(9,9,11,0.14);
+}
+
+[data-theme='light'] .btn-ghost:hover {
+  color: #111827;
+  background: rgba(255,255,255,0.96);
+  border-color: rgba(9,9,11,0.24);
+}
+
+[data-theme='light'] .btn-ghost-strong {
+  color: #ffffff;
+  background: linear-gradient(135deg, #ff453a 0%, #ff6b3a 100%);
+  border-color: rgba(255,69,58,0.3);
+  box-shadow: 0 6px 18px -8px rgba(255,69,58,0.6);
+}
+
+[data-theme='light'] .btn-ghost-strong:hover {
+  color: #ffffff;
+  background: linear-gradient(135deg, #ff5b52 0%, #ff7d52 100%);
+  border-color: rgba(255,69,58,0.4);
+}
+
+[data-theme='light'] .panel-hover:hover {
+  border-color: rgba(9,9,11,0.2);
 }
 
 /* ---------- Code syntax (Gherkin) ---------- */

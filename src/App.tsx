@@ -1,11 +1,12 @@
-import { useState } from 'react'
-import { Settings, FileSearch, LayoutDashboard, Activity } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Settings, FileSearch, LayoutDashboard, Activity, Moon, Sun } from 'lucide-react'
 import SetupScreen from './screens/SetupScreen'
 import AnalysisScreen from './screens/AnalysisScreen'
 import ReportScreen from './screens/ReportScreen'
 import { mockReport } from './data/mockReport'
 
 export type Screen = 'setup' | 'analysis' | 'report'
+type Theme = 'dark' | 'light'
 
 const navItems: { id: Screen; label: string; icon: typeof Activity }[] = [
   { id: 'setup', label: 'Setup Context', icon: Settings },
@@ -15,6 +16,21 @@ const navItems: { id: Screen; label: string; icon: typeof Activity }[] = [
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>('analysis')
+  const [theme, setTheme] = useState<Theme>('dark')
+
+  useEffect(() => {
+    const stored = localStorage.getItem('theme')
+    const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches
+    const initialTheme: Theme = stored === 'light' || stored === 'dark' ? stored : prefersLight ? 'light' : 'dark'
+    setTheme(initialTheme)
+  }, [])
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+    localStorage.setItem('theme', theme)
+  }, [theme])
+
+  const toggleTheme = () => setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'))
 
   return (
     <div className="min-h-screen bg-obsidian relative overflow-hidden">
@@ -62,6 +78,16 @@ export default function App() {
               </button>
             )
           })}
+          <div className="w-px h-6 bg-white/10" />
+          <button
+            onClick={toggleTheme}
+            className="relative flex items-center gap-2 px-3 py-2.5 rounded-full text-sm font-medium text-zinc-500 hover:text-zinc-300 transition-all duration-300"
+            aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
+            title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
+          >
+            {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            <span className="hidden sm:inline">{theme === 'dark' ? 'Light' : 'Dark'}</span>
+          </button>
         </div>
       </div>
 
