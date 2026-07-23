@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { FileSearch, Sparkles, Upload, FileCode2, Play, Loader as Loader2, CircleCheck as CheckCircle2, CircleAlert as AlertCircle, Wand as Wand2, Layers, GitCompare } from 'lucide-react'
+import { FileSearch, Sparkles, Upload, FileCode2, Play, Loader as Loader2, CircleCheck as CheckCircle2, Layers, GitCompare, ScanLine, BrainCircuit } from 'lucide-react'
 
 const sampleJira = `Ticket: PAY-1247
 Summary: Add multi-currency support to checkout flow
@@ -29,12 +29,12 @@ const sampleFeature = `Feature: Multi-currency checkout
     And the order is persisted with currency_code = "GBP"`
 
 const progressSteps = [
-  { label: 'Parsing Jira requirement', icon: FileSearch },
-  { label: 'Diffing feature files against baseline', icon: GitCompare },
-  { label: 'Scanning codebase for affected modules', icon: Layers },
-  { label: 'Analyzing database schema impact', icon: AlertCircle },
-  { label: 'Cross-referencing user workflows', icon: Wand2 },
-  { label: 'Generating impact assessment', icon: Sparkles },
+  { label: 'Parsing Jira requirement', icon: FileSearch, detail: 'Extracting ticket ID, summary & acceptance criteria' },
+  { label: 'Diffing feature files against baseline', icon: GitCompare, detail: 'Comparing 2 new scenarios against 312 existing' },
+  { label: 'Scanning codebase for affected modules', icon: Layers, detail: 'Tracing dependency graph across 1,284 files' },
+  { label: 'Analyzing database schema impact', icon: ScanLine, detail: 'Checking 38 tables for required migrations' },
+  { label: 'Cross-referencing user workflows', icon: BrainCircuit, detail: 'Matching against knowledge base documents' },
+  { label: 'Generating impact assessment', icon: Sparkles, detail: 'Compiling risk score & recommendations' },
 ]
 
 export default function AnalysisScreen({ onGenerate }: { onGenerate: () => void }) {
@@ -49,155 +49,179 @@ export default function AnalysisScreen({ onGenerate }: { onGenerate: () => void 
     setProgress(0)
     const interval = setInterval(() => {
       setProgress((p) => {
-        const next = p + 100 / (progressSteps.length * 8)
+        const next = p + 100 / (progressSteps.length * 9)
         if (next >= 100) {
           clearInterval(interval)
-          setTimeout(onGenerate, 500)
+          setTimeout(onGenerate, 600)
           return 100
         }
         return next
       })
-    }, 220)
+    }, 200)
   }
 
   const currentStep = Math.min(Math.floor((progress / 100) * progressSteps.length), progressSteps.length - 1)
 
   return (
     <div className="p-6 md:p-10 max-w-6xl mx-auto animate-fade-in">
-      <header className="mb-8">
-        <div className="flex items-center gap-2 text-xs text-sky-400 font-semibold uppercase tracking-wider mb-2">
+      <header className="mb-8 animate-slide-up">
+        <div className="flex items-center gap-2 text-xs text-sky-400 font-bold uppercase tracking-widest mb-3">
           <FileSearch className="w-3.5 h-3.5" /> Step 2 · Analysis Trigger
         </div>
-        <h2 className="text-3xl font-bold text-white">New Impact Analysis</h2>
-        <p className="text-ink-400 mt-2 max-w-2xl">
+        <h2 className="text-4xl font-extrabold text-white tracking-tight">New Impact Analysis</h2>
+        <p className="text-ink-400 mt-2 max-w-2xl text-[15px] leading-relaxed">
           Provide the Jira requirement and updated feature files. The AI engine compares them against your indexed knowledge base to produce a detailed impact report.
         </p>
       </header>
 
       {!running ? (
-        <div className="grid lg:grid-cols-2 gap-5">
-          {/* Jira input */}
-          <div className="card p-6 animate-slide-up">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-9 h-9 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center">
-                <FileSearch className="w-4.5 h-4.5 text-sky-400" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-white">Jira Ticket / Requirement</h3>
-                <p className="text-xs text-ink-400">Ticket ID, summary & acceptance criteria</p>
-              </div>
-            </div>
-            <textarea
-              value={jira}
-              onChange={(e) => setJira(e.target.value)}
-              rows={14}
-              className="input font-mono text-sm leading-relaxed resize-none"
-              placeholder="Paste Jira ticket content here..."
-            />
-            <div className="flex items-center justify-between mt-3 text-xs text-ink-500">
-              <span>{jira.trim().split('\n').length} lines</span>
-              <span>{jira.length} chars</span>
-            </div>
-          </div>
-
-          {/* Feature files */}
-          <div className="card p-6 animate-slide-up" style={{ animationDelay: '60ms' }}>
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-lg bg-teal-500/10 border border-teal-500/20 flex items-center justify-center">
-                  <FileCode2 className="w-4.5 h-4.5 text-teal-400" />
+        <>
+          <div className="grid lg:grid-cols-2 gap-5">
+            {/* Jira input */}
+            <div className="card p-6 animate-slide-up stagger-1">
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500/20 to-sky-500/5 border border-sky-500/25 flex items-center justify-center">
+                  <FileSearch className="w-5 h-5 text-sky-400" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-white">New / Modified Feature Files</h3>
-                  <p className="text-xs text-ink-400">Gherkin .feature reflecting the proposed change</p>
+                  <h3 className="font-bold text-white">Jira Ticket / Requirement</h3>
+                  <p className="text-xs text-ink-400">Ticket ID, summary & acceptance criteria</p>
                 </div>
               </div>
-              <div className="flex rounded-lg bg-ink-900/70 border border-ink-700/60 p-0.5">
-                <button onClick={() => setMode('edit')} className={`px-3 py-1.5 text-xs rounded-md font-medium transition ${mode === 'edit' ? 'bg-sky-500/20 text-sky-300' : 'text-ink-400'}`}>Editor</button>
-                <button onClick={() => setMode('upload')} className={`px-3 py-1.5 text-xs rounded-md font-medium transition ${mode === 'upload' ? 'bg-sky-500/20 text-sky-300' : 'text-ink-400'}`}>Upload</button>
+              <textarea
+                value={jira}
+                onChange={(e) => setJira(e.target.value)}
+                rows={14}
+                className="input font-mono text-sm leading-relaxed resize-none"
+                placeholder="Paste Jira ticket content here..."
+              />
+              <div className="flex items-center justify-between mt-3 text-xs text-ink-500">
+                <span className="flex items-center gap-1.5"><FileCode2 className="w-3 h-3" /> {jira.trim().split('\n').length} lines</span>
+                <span>{jira.length} chars</span>
               </div>
             </div>
 
-            {mode === 'edit' ? (
-              <textarea
-                value={feature}
-                onChange={(e) => setFeature(e.target.value)}
-                rows={14}
-                className="input font-mono text-sm leading-relaxed resize-none"
-                placeholder="Feature: ..."
-              />
-            ) : (
-              <div className="border-2 border-dashed border-ink-700/60 rounded-xl h-[324px] flex flex-col items-center justify-center text-center hover:border-teal-500/40 transition-colors cursor-pointer">
-                <div className="w-12 h-12 rounded-xl bg-teal-500/10 flex items-center justify-center mb-3">
-                  <Upload className="w-6 h-6 text-teal-400" />
+            {/* Feature files */}
+            <div className="card p-6 animate-slide-up stagger-2">
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500/20 to-teal-500/5 border border-teal-500/25 flex items-center justify-center">
+                    <FileCode2 className="w-5 h-5 text-teal-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-white">New / Modified Feature Files</h3>
+                    <p className="text-xs text-ink-400">Gherkin .feature reflecting the proposed change</p>
+                  </div>
                 </div>
-                <p className="text-sm text-ink-200 font-medium">Drop .feature files here</p>
-                <p className="text-xs text-ink-500 mt-1">or click to browse</p>
+                <div className="flex rounded-lg bg-ink-900/70 border border-ink-700/50 p-0.5">
+                  <button onClick={() => setMode('edit')} className={`px-3 py-1.5 text-xs rounded-md font-medium transition ${mode === 'edit' ? 'bg-teal-500/20 text-teal-300' : 'text-ink-400 hover:text-ink-200'}`}>Editor</button>
+                  <button onClick={() => setMode('upload')} className={`px-3 py-1.5 text-xs rounded-md font-medium transition ${mode === 'upload' ? 'bg-teal-500/20 text-teal-300' : 'text-ink-400 hover:text-ink-200'}`}>Upload</button>
+                </div>
               </div>
-            )}
-            <div className="flex items-center justify-between mt-3 text-xs">
-              <span className="text-ink-500">{mode === 'edit' ? `${feature.split('Scenario').length - 1} scenarios` : '0 files'}</span>
-              <span className="chip bg-teal-500/10 text-teal-400 border border-teal-500/20">Gherkin syntax</span>
+
+              {mode === 'edit' ? (
+                <textarea
+                  value={feature}
+                  onChange={(e) => setFeature(e.target.value)}
+                  rows={14}
+                  className="input font-mono text-sm leading-relaxed resize-none"
+                  placeholder="Feature: ..."
+                />
+              ) : (
+                <div className="border-2 border-dashed border-ink-700/50 rounded-xl h-[324px] flex flex-col items-center justify-center text-center hover:border-teal-500/40 hover:bg-teal-500/5 transition-all cursor-pointer group">
+                  <div className="w-14 h-14 rounded-2xl bg-teal-500/10 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                    <Upload className="w-6 h-6 text-teal-400" />
+                  </div>
+                  <p className="text-sm text-ink-200 font-medium">Drop .feature files here</p>
+                  <p className="text-xs text-ink-500 mt-1">or click to browse</p>
+                </div>
+              )}
+              <div className="flex items-center justify-between mt-3 text-xs">
+                <span className="text-ink-500">{mode === 'edit' ? `${feature.split('Scenario').length - 1} scenarios detected` : '0 files'}</span>
+                <span className="chip bg-teal-500/10 text-teal-400 border border-teal-500/20">Gherkin syntax</span>
+              </div>
             </div>
           </div>
-        </div>
-      ) : (
-        <div className="card p-8 animate-fade-in">
-          <div className="flex flex-col items-center text-center mb-8">
-            <div className="relative mb-5">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-sky-500/20 to-teal-500/10 flex items-center justify-center">
-                <Loader2 className="w-9 h-9 text-sky-400 animate-spin" />
+
+          {/* Action bar */}
+          <div className="card p-5 mt-5 flex flex-wrap items-center justify-between gap-4 animate-slide-up stagger-3">
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">
+                  <Sparkles className="w-4 h-4 text-violet-300" />
+                </div>
+                <div>
+                  <div className="text-xs text-ink-400">Engine</div>
+                  <div className="text-sm font-semibold text-white">GPT-4o · Deep</div>
+                </div>
               </div>
-              <div className="absolute -inset-2 rounded-full border-2 border-sky-500/20 border-t-sky-400 animate-spin-slow" />
+              <div className="w-px h-8 bg-ink-700/40" />
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center">
+                  <Layers className="w-4 h-4 text-sky-400" />
+                </div>
+                <div>
+                  <div className="text-xs text-ink-400">Indexed</div>
+                  <div className="text-sm font-semibold text-white">1,284 files</div>
+                </div>
+              </div>
             </div>
-            <h3 className="text-xl font-bold text-white">Analyzing impact...</h3>
-            <p className="text-sm text-ink-400 mt-1">Comparing requirement against 1,284 indexed files</p>
+            <button onClick={handleGenerate} className="btn-primary text-base px-7 py-3.5">
+              <Play className="w-4 h-4" /> Generate Impact Report
+            </button>
+          </div>
+        </>
+      ) : (
+        <div className="card p-8 md:p-12 animate-fade-in max-w-2xl mx-auto">
+          {/* Animated header */}
+          <div className="flex flex-col items-center text-center mb-10">
+            <div className="relative mb-6">
+              <div className="absolute -inset-4 rounded-full border-2 border-sky-500/20 border-t-sky-400 animate-spin-slow" />
+              <div className="absolute -inset-8 rounded-full border border-teal-500/15 border-b-teal-400/40 animate-spin-slow" style={{ animationDirection: 'reverse', animationDuration: '6s' }} />
+              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-sky-500/20 via-cyan-500/10 to-teal-500/15 flex items-center justify-center relative">
+                <Loader2 className="w-10 h-10 text-sky-400 animate-spin" />
+              </div>
+            </div>
+            <h3 className="text-2xl font-extrabold text-white tracking-tight">Analyzing impact...</h3>
+            <p className="text-sm text-ink-400 mt-1.5">Comparing requirement against 1,284 indexed files</p>
           </div>
 
           {/* Progress bar */}
           <div className="mb-8">
-            <div className="flex justify-between text-xs mb-2">
-              <span className="text-ink-300 font-medium">{progressSteps[currentStep].label}</span>
-              <span className="text-sky-400 font-semibold tabular-nums">{Math.round(progress)}%</span>
+            <div className="flex justify-between items-baseline text-xs mb-2.5">
+              <span className="text-ink-200 font-semibold">{progressSteps[currentStep].label}</span>
+              <span className="text-sky-400 font-bold tabular-nums text-base">{Math.round(progress)}%</span>
             </div>
-            <div className="h-2.5 rounded-full bg-ink-800/80 overflow-hidden">
+            <div className="h-2.5 rounded-full bg-ink-800/80 overflow-hidden relative">
               <div
-                className="h-full rounded-full transition-all duration-200"
-                style={{ width: `${progress}%`, background: 'linear-gradient(90deg,#0ea5e9,#0d9488)' }}
-              />
+                className="h-full rounded-full transition-all duration-200 relative"
+                style={{ width: `${progress}%`, background: 'linear-gradient(90deg,#0ea5e9,#06b6d4,#0d9488)' }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent" style={{ animation: 'shimmer 1.5s linear infinite', backgroundSize: '200% 100%' }} />
+              </div>
             </div>
+            <p className="text-xs text-ink-500 mt-2">{progressSteps[currentStep].detail}</p>
           </div>
 
           {/* Steps list */}
-          <div className="space-y-2.5">
+          <div className="space-y-2">
             {progressSteps.map((step, i) => {
               const Icon = step.icon
               const done = i < currentStep
               const active = i === currentStep
               return (
-                <div key={step.label} className={`flex items-center gap-3 rounded-lg px-3 py-2.5 transition-all ${active ? 'bg-sky-500/10 border border-sky-500/20' : ''}`}>
-                  <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${
+                <div key={step.label} className={`flex items-center gap-3.5 rounded-xl px-3.5 py-3 transition-all duration-300 ${active ? 'bg-sky-500/8 border border-sky-500/20' : 'border border-transparent'}`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all ${
                     done ? 'bg-emerald-500/15 text-emerald-400' : active ? 'bg-sky-500/15 text-sky-400' : 'bg-ink-800/60 text-ink-500'
                   }`}>
-                    {done ? <CheckCircle2 className="w-4 h-4" /> : active ? <Loader2 className="w-4 h-4 animate-spin" /> : <Icon className="w-3.5 h-3.5" />}
+                    {done ? <CheckCircle2 className="w-4 h-4" /> : active ? <Loader2 className="w-4 h-4 animate-spin" /> : <Icon className="w-4 h-4" />}
                   </div>
-                  <span className={`text-sm ${done ? 'text-ink-300' : active ? 'text-white font-medium' : 'text-ink-500'}`}>{step.label}</span>
+                  <span className={`text-sm ${done ? 'text-ink-400' : active ? 'text-white font-semibold' : 'text-ink-500'}`}>{step.label}</span>
+                  {done && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500/50 ml-auto" />}
                 </div>
               )
             })}
           </div>
-        </div>
-      )}
-
-      {!running && (
-        <div className="flex items-center justify-between mt-8 pt-6 border-t border-ink-700/40">
-          <div className="text-sm text-ink-400 flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-sky-400" />
-            Estimated analysis depth: <span className="text-ink-200 font-medium">deep</span>
-          </div>
-          <button onClick={handleGenerate} className="btn-primary text-base px-7 py-3.5">
-            <Play className="w-4 h-4" /> Generate Impact Report
-          </button>
         </div>
       )}
     </div>
