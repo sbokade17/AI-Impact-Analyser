@@ -17,21 +17,23 @@ const steps: ScanStep[] = [
 export default function ScanBeam({ onComplete }: { onComplete: () => void }) {
   const [progress, setProgress] = useState(0)
   const [activeStep, setActiveStep] = useState(0)
+  const [durationMs] = useState(() => 5000 + Math.random() * 10000)
 
   useEffect(() => {
+    const start = Date.now()
     const interval = setInterval(() => {
-      setProgress((p) => {
-        const next = p + 100 / 45
-        if (next >= 100) {
+      const elapsed = Date.now() - start
+      const next = Math.min((elapsed / durationMs) * 100, 100)
+
+      setProgress(next)
+
+      if (next >= 100) {
           clearInterval(interval)
-          setTimeout(onComplete, 500)
-          return 100
+          setTimeout(onComplete, 250)
         }
-        return next
-      })
     }, 80)
     return () => clearInterval(interval)
-  }, [onComplete])
+  }, [durationMs, onComplete])
 
   useEffect(() => {
     setActiveStep(Math.min(Math.floor((progress / 100) * steps.length), steps.length - 1))
