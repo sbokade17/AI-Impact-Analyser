@@ -29,7 +29,7 @@ export default function DonutChart({ data, size = 160, thickness = 22, centerLab
   return (
     <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90">
-        <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke="rgba(99,113,153,0.08)" strokeWidth={thickness} />
+        <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke="rgba(15,23,42,0.05)" strokeWidth={thickness} />
         {data.map((slice, i) => {
           const frac = slice.value / total
           const dash = circ * frac
@@ -48,13 +48,13 @@ export default function DonutChart({ data, size = 160, thickness = 22, centerLab
               strokeDasharray={mounted ? `${dash} ${gap}` : `0 ${circ}`}
               strokeDashoffset={-((rotation / 360) * circ)}
               strokeLinecap="butt"
-              style={{ transition: 'stroke-dasharray 1.2s cubic-bezier(0.16,1,0.3,1)', filter: `drop-shadow(0 0 6px ${slice.color}55)` }}
+              style={{ transition: 'stroke-dasharray 1.2s cubic-bezier(0.16,1,0.3,1)', filter: `drop-shadow(0 0 4px ${slice.color}44)` }}
             />
           )
         })}
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        {centerValue && <span className="text-2xl font-extrabold text-white tabular-nums">{centerValue}</span>}
+        {centerValue && <span className="text-2xl font-extrabold text-ink-900 tabular-nums">{centerValue}</span>}
         {centerLabel && <span className="text-[10px] text-ink-400 uppercase tracking-wider mt-0.5">{centerLabel}</span>}
       </div>
     </div>

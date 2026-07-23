@@ -24,7 +24,7 @@ export default function RingProgress({ value, max = 100, size = 72, stroke = 7, 
   return (
     <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90">
-        <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke="rgba(99,113,153,0.12)" strokeWidth={stroke} />
+        <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke="rgba(15,23,42,0.08)" strokeWidth={stroke} />
         <circle
           cx={size/2}
           cy={size/2}
@@ -35,11 +35,11 @@ export default function RingProgress({ value, max = 100, size = 72, stroke = 7, 
           strokeLinecap="round"
           strokeDasharray={circ}
           strokeDashoffset={offset}
-          style={{ transition: 'stroke-dashoffset 1s cubic-bezier(0.16,1,0.3,1)', filter: `drop-shadow(0 0 4px ${color}66)` }}
+          style={{ transition: 'stroke-dashoffset 1s cubic-bezier(0.16,1,0.3,1)', filter: `drop-shadow(0 0 3px ${color}44)` }}
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-sm font-bold text-white tabular-nums">{label ?? Math.round(value)}</span>
+        <span className="text-sm font-bold text-ink-800 tabular-nums">{label ?? Math.round(value)}</span>
       </div>
     </div>
   )

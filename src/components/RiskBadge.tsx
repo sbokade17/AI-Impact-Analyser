@@ -1,9 +1,9 @@
 import type { RiskLevel } from '../data/mockReport'
 
 export const riskStyles: Record<RiskLevel, { bg: string; text: string; border: string; dot: string; glow: string; hex: string; soft: string }> = {
-  High: { bg: 'bg-red-500/10', text: 'text-red-400', border: 'border-red-500/30', dot: 'bg-red-500', glow: 'glow-red', hex: '#ef4444', soft: 'rgba(239,68,68,0.12)' },
-  Medium: { bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-500/30', dot: 'bg-amber-500', glow: 'glow-amber', hex: '#f59e0b', soft: 'rgba(245,158,11,0.12)' },
-  Low: { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/30', dot: 'bg-emerald-500', glow: 'glow-teal', hex: '#10b981', soft: 'rgba(16,185,129,0.12)' },
+  High: { bg: 'bg-red-50', text: 'text-red-600', border: 'border-red-200', dot: 'bg-red-500', glow: 'glow-red', hex: '#ef4444', soft: 'rgba(239,68,68,0.08)' },
+  Medium: { bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-200', dot: 'bg-amber-500', glow: 'glow-amber', hex: '#f59e0b', soft: 'rgba(245,158,11,0.08)' },
+  Low: { bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-200', dot: 'bg-emerald-500', glow: 'glow-teal', hex: '#10b981', soft: 'rgba(16,185,129,0.08)' },
 }
 
 export function RiskBadge({ level, size = 'md' }: { level: RiskLevel; size?: 'sm' | 'md' | 'lg' }) {
