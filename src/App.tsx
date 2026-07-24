@@ -1,9 +1,17 @@
 import { useEffect, useState } from 'react'
-import { Settings, FileSearch, LayoutDashboard, Activity, Moon, Sun } from 'lucide-react'
+import { Settings, FileSearch, LayoutDashboard, Activity, Moon, Sun, Presentation, Loader as Loader2 } from 'lucide-react'
 import SetupScreen from './screens/SetupScreen'
 import AnalysisScreen from './screens/AnalysisScreen'
 import ReportScreen from './screens/ReportScreen'
 import { mockReport } from './data/mockReport'
+import { generatePresentation } from './pptx/generatePresentation'
+
+// Lazy-load pptxgenjs only when generating
+let _pptxgen: typeof import('pptxgenjs') | null = null
+async function getPptxGen() {
+  if (!_pptxgen) _pptxgen = await import('pptxgenjs')
+  return _pptxgen.default
+}
 
 export type Screen = 'setup' | 'analysis' | 'report'
 type Theme = 'dark' | 'light'
@@ -16,6 +24,7 @@ const navItems: { id: Screen; label: string; icon: typeof Activity }[] = [
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>('analysis')
+  const [generating, setGenerating] = useState(false)
   const [theme, setTheme] = useState<Theme>(() => {
     if (typeof window === 'undefined') {
       return 'light'
@@ -75,6 +84,30 @@ export default function App() {
               </button>
             )
           })}
+          <div className="w-px h-6 bg-white/10" />
+          <button
+            onClick={async () => {
+              setGenerating(true)
+              try {
+                const PptxGen = await getPptxGen()
+                const pptx = generatePresentation(PptxGen)
+                await pptx.writeFile({ fileName: 'AI-Impact-Analyser-Overview.pptx' })
+              } finally {
+                setGenerating(false)
+              }
+            }}
+            className="relative flex items-center gap-2 px-3 py-2.5 rounded-full text-sm font-medium text-zinc-500 hover:text-zinc-300 transition-all duration-300"
+            title="Download PowerPoint overview"
+          >
+            {generating ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <>
+                <Presentation className="w-4 h-4" />
+                <span className="hidden lg:inline">PPTX</span>
+              </>
+            )}
+          </button>
           <div className="w-px h-6 bg-white/10" />
           <button
             onClick={toggleTheme}
