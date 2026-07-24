@@ -72,6 +72,14 @@ public class ReportService {
         return toResponse(report);
     }
 
+    public ReportResponse getLatestByProjectId(UUID projectId) {
+        Report report = reportRepository.findTopByAnalysisRunProjectIdOrderByGeneratedAtDesc(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("No report found for project: " + projectId));
+
+        ensureProposedPatches(report);
+        return toResponse(report);
+    }
+
     // ─────────────────────────────────────────
     // Mapping helpers
     // ─────────────────────────────────────────

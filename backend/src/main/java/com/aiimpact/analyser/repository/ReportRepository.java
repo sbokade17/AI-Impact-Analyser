@@ -12,4 +12,6 @@ public interface ReportRepository extends JpaRepository<Report, UUID> {
 
     @Query("SELECT r FROM Report r WHERE r.analysisRun.id = :runId")
     Optional<Report> findByAnalysisRunId(@Param("runId") UUID runId);
+
+    Optional<Report> findTopByAnalysisRunProjectIdOrderByGeneratedAtDesc(UUID projectId);
 }

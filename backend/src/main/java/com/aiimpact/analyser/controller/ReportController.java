@@ -23,4 +23,9 @@ public class ReportController {
     public ResponseEntity<ReportResponse> getByRunId(@PathVariable UUID runId) {
         return ResponseEntity.ok(reportService.getByRunId(runId));
     }
+
+    @GetMapping("/project/{projectId}/latest")
+    public ResponseEntity<ReportResponse> getLatestByProjectId(@PathVariable UUID projectId) {
+        return ResponseEntity.ok(reportService.getLatestByProjectId(projectId));
+    }
 }

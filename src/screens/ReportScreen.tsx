@@ -8,6 +8,7 @@ import RiskGauge from '../components/RiskGauge'
 import { RiskPill } from '../components/RiskPill'
 import DiffViewer from '../components/DiffViewer'
 import FlowTimeline from '../components/FlowTimeline'
+import TenRiskRadar from '../components/TenRiskRadar'
 
 type Tab = 'files' | 'database' | 'tests' | 'recommendations' | 'dependencies'
 
@@ -30,6 +31,7 @@ export default function ReportScreen({ report, onBack }: { report: ReportData; o
   const [selectedFile, setSelectedFile] = useState(report.affectedFiles[0] ?? null)
   const [exporting, setExporting] = useState(false)
   const cfg = riskConfig[report.riskLevel]
+  const radarData = buildTenRiskRadarData(report)
 
   const exportReport = async () => {
     if (exporting) {
@@ -472,11 +474,59 @@ export default function ReportScreen({ report, onBack }: { report: ReportData; o
         </div>
       </div>
 
+      <TenRiskRadar data={radarData} className="animate-slide-up stagger-4 mb-6" />
+
       <p className="text-center text-xs text-zinc-600 mt-8 flex items-center justify-center gap-1.5">
         <Sparkles className="w-3 h-3" /> Generated {report.generatedAt} · AI Impact Analyser
       </p>
     </div>
   )
+}
+
+function buildTenRiskRadarData(report: ReportData) {
+  const riskWeight: Record<'High' | 'Medium' | 'Low', number> = {
+    High: 100,
+    Medium: 62,
+    Low: 28,
+  }
+
+  const average = (values: number[]) => {
+    if (values.length === 0) {
+      return 0
+    }
+    return values.reduce((sum, value) => sum + value, 0) / values.length
+  }
+
+  const fileRiskByType = (type: 'service' | 'controller' | 'model' | 'migration' | 'test' | 'feature') =>
+    average(report.affectedFiles.filter((f) => f.type === type).map((f) => riskWeight[f.risk]))
+
+  const clamp = (value: number) => Math.max(0, Math.min(100, value))
+
+  const requiredTests = report.testCases.filter((t) => t.status === 'required').length
+  const requiredTestPressure = report.testCases.length > 0 ? (requiredTests / report.testCases.length) * 100 : 0
+
+  const p0 = report.recommendations.filter((r) => r.priority === 'P0').length
+  const p1 = report.recommendations.filter((r) => r.priority === 'P1').length
+  const recommendationPressure = clamp(p0 * 40 + p1 * 18)
+
+  const dbRisk = average(report.dbChanges.map((d) => riskWeight[d.risk]))
+  const flowRisk = average(report.functionalAreas.map((a) => riskWeight[a.impact]))
+
+  const dependencyPressure = clamp(report.dependencies.length * 22 + p0 * 12)
+  const deliveryRisk = clamp(report.riskScore * 0.6 + recommendationPressure * 0.4)
+
+  return [
+    { label: 'Service', value: clamp(fileRiskByType('service')) },
+    { label: 'API', value: clamp(fileRiskByType('controller')) },
+    { label: 'Model', value: clamp(fileRiskByType('model')) },
+    { label: 'Schema', value: clamp(dbRisk) },
+    { label: 'Migrations', value: clamp(fileRiskByType('migration') * 0.6 + dbRisk * 0.4) },
+    { label: 'Tests', value: clamp(requiredTestPressure) },
+    { label: 'Features', value: clamp(fileRiskByType('feature') * 0.7 + requiredTestPressure * 0.3) },
+    { label: 'Dependencies', value: dependencyPressure },
+    { label: 'Flows', value: clamp(flowRisk) },
+    { label: 'Delivery', value: deliveryRisk },
+  ]
 }
 
 function ScoreBar({ label, value, max, color }: { label: string; value: number; max: number; color: string }) {

@@ -7,6 +7,7 @@ import type { ReportData } from './data/mockReport'
 import {
   createAnalysisRun,
   createProject,
+  getLatestReportByProjectId,
   getProject,
   getReportByRunId,
   upsertProjectSources,
@@ -31,6 +32,7 @@ export default function App() {
   const [setupState, setSetupState] = useState<SourceState | null>(null)
   const [report, setReport] = useState<ReportData | null>(null)
   const [globalError, setGlobalError] = useState<string | null>(null)
+  const [reportHydrating, setReportHydrating] = useState(false)
   const [theme, setTheme] = useState<Theme>(() => {
     if (typeof window === 'undefined') {
       return 'light'
@@ -70,6 +72,16 @@ export default function App() {
         setProjectId(savedProjectId)
         setSetupState(mapped)
         localStorage.setItem(SETUP_DRAFT_KEY, JSON.stringify(sanitizeSetupStateForStorage(mapped)))
+
+        try {
+          setReportHydrating(true)
+          const latest = await getLatestReportByProjectId<ReportData>(savedProjectId)
+          setReport(latest)
+        } catch {
+          // No historical report for this project yet.
+        } finally {
+          setReportHydrating(false)
+        }
       } catch {
         // Ignore hydration errors and let users continue with manual setup.
       }
@@ -262,6 +274,18 @@ export default function App() {
           />
         )}
         {screen === 'report' && report && <ReportScreen report={report} onBack={() => setScreen('analysis')} />}
+        {screen === 'report' && !report && (
+          <div className="max-w-4xl mx-auto px-6">
+            <div className="panel p-8 text-center">
+              <h3 className="font-display text-2xl font-bold text-white mb-2">Report Dashboard</h3>
+              <p className="text-zinc-400 text-sm">
+                {reportHydrating
+                  ? 'Loading your latest report...'
+                  : 'No previous report found for this project. Run a new analysis to populate the dashboard.'}
+              </p>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   )

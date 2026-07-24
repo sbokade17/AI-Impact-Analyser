@@ -154,6 +154,10 @@ export async function getReportByRunId<TReport>(runId: string): Promise<TReport>
   return request<TReport>(`/api/reports/${runId}`)
 }
 
+export async function getLatestReportByProjectId<TReport>(projectId: string): Promise<TReport> {
+  return request<TReport>(`/api/reports/project/${projectId}/latest`)
+}
+
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, ms)

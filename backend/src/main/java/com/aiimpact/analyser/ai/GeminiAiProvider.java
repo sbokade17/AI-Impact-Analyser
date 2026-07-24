@@ -8,9 +8,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 
+import java.net.http.HttpClient;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -30,19 +34,32 @@ public class GeminiAiProvider implements AiProvider {
     private final String apiKey;
     private final String model;
     private final List<String> fallbackModels;
+    private final int maxRetries;
+    private final long retryDelayMs;
 
     public GeminiAiProvider(
             @Value("${ai.gemini.api-key}") String apiKey,
             @Value("${ai.gemini.model}") String model,
             @Value("${ai.gemini.fallback-models:gemini-2.5-flash,gemini-2.0-flash,gemini-1.5-flash}") String fallbackModelsCsv,
             @Value("${ai.gemini.base-url}") String baseUrl,
+            @Value("${ai.gemini.max-retries:3}") int maxRetries,
+            @Value("${ai.gemini.retry-delay-ms:800}") long retryDelayMs,
             ObjectMapper objectMapper) {
         this.apiKey = apiKey;
         this.model = model;
         this.fallbackModels = parseFallbackModels(fallbackModelsCsv);
+        this.maxRetries = Math.max(1, maxRetries);
+        this.retryDelayMs = Math.max(100, retryDelayMs);
         this.objectMapper = objectMapper;
+
+        HttpClient httpClient = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
+                .connectTimeout(Duration.ofSeconds(20))
+                .build();
+
         this.restClient = RestClient.builder()
                 .baseUrl(baseUrl)
+                .requestFactory(new JdkClientHttpRequestFactory(httpClient))
                 .build();
     }
 
@@ -203,27 +220,56 @@ public class GeminiAiProvider implements AiProvider {
         RestClientResponseException last404 = null;
         for (String currentModel : modelsToTry) {
             String url = "/models/" + currentModel + ":generateContent?key=" + apiKey;
-            try {
-                log.info("Calling Gemini model={}", currentModel);
-                return restClient.post()
-                        .uri(url)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .body(requestBody)
-                        .retrieve()
-                        .body(String.class);
-            } catch (RestClientResponseException ex) {
-                if (ex.getStatusCode().value() == 404) {
-                    last404 = ex;
-                    log.warn("Gemini model '{}' not found for generateContent; trying next fallback if available", currentModel);
-                    continue;
+            for (int attempt = 1; attempt <= maxRetries; attempt++) {
+                try {
+                    log.info("Calling Gemini model={} attempt={}/{}", currentModel, attempt, maxRetries);
+                    return restClient.post()
+                            .uri(url)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .body(requestBody)
+                            .retrieve()
+                            .body(String.class);
+                } catch (RestClientResponseException ex) {
+                    int status = ex.getStatusCode().value();
+                    if (status == 404) {
+                        last404 = ex;
+                        log.warn("Gemini model '{}' not found for generateContent; trying next fallback if available", currentModel);
+                        break;
+                    }
+
+                    if (isRetryableStatus(status) && attempt < maxRetries) {
+                        log.warn("Transient Gemini API error status={} model={} attempt={}/{}; retrying", status, currentModel, attempt, maxRetries);
+                        sleepBackoff(attempt);
+                        continue;
+                    }
+                    throw ex;
+                } catch (ResourceAccessException ex) {
+                    if (attempt < maxRetries) {
+                        log.warn("Transient Gemini transport error model={} attempt={}/{}: {}", currentModel, attempt, maxRetries, ex.getMessage());
+                        sleepBackoff(attempt);
+                        continue;
+                    }
+                    throw ex;
                 }
-                throw ex;
             }
         }
 
         String attempted = modelsToTry.stream().collect(Collectors.joining(", "));
         String detail = last404 == null ? "" : " Response: " + last404.getResponseBodyAsString();
         throw new RuntimeException("No supported Gemini model found. Attempted models: " + attempted + "." + detail);
+    }
+
+    private boolean isRetryableStatus(int status) {
+        return status == 408 || status == 409 || status == 429 || status >= 500;
+    }
+
+    private void sleepBackoff(int attempt) {
+        long delay = retryDelayMs * attempt;
+        try {
+            Thread.sleep(delay);
+        } catch (InterruptedException interruptedException) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     private List<String> parseFallbackModels(String fallbackModelsCsv) {
