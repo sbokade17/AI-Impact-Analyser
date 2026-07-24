@@ -27,7 +27,7 @@ const changeStyles: Record<string, string> = {
 
 export default function ReportScreen({ report, onBack }: { report: ReportData; onBack: () => void }) {
   const [tab, setTab] = useState<Tab>('files')
-  const [selectedFile, setSelectedFile] = useState(report.affectedFiles[0])
+  const [selectedFile, setSelectedFile] = useState(report.affectedFiles[0] ?? null)
   const [exporting, setExporting] = useState(false)
   const cfg = riskConfig[report.riskLevel]
 
@@ -266,10 +266,10 @@ export default function ReportScreen({ report, onBack }: { report: ReportData; o
 
             {/* Score breakdown */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <ScoreBar label="Files" value={report.scoreBreakdown.files} color="#ff453a" />
-              <ScoreBar label="Database" value={report.scoreBreakdown.database} color="#ff9f0a" />
-              <ScoreBar label="Functional" value={report.scoreBreakdown.functional} color="#30d158" />
-              <ScoreBar label="Tests" value={report.scoreBreakdown.tests} color="#8b5cf6" />
+              <ScoreBar label="Files" value={report.scoreBreakdown.files} max={40} color="#ff453a" />
+              <ScoreBar label="Database" value={report.scoreBreakdown.database} max={30} color="#ff9f0a" />
+              <ScoreBar label="Functional" value={report.scoreBreakdown.functional} max={20} color="#30d158" />
+              <ScoreBar label="Tests" value={report.scoreBreakdown.tests} max={10} color="#8b5cf6" />
             </div>
 
             {/* Quick stats */}
@@ -322,7 +322,7 @@ export default function ReportScreen({ report, onBack }: { report: ReportData; o
                       key={f.path}
                       onClick={() => setSelectedFile(f)}
                       className={`w-full text-left rounded-lg px-3 py-2.5 transition-all ${
-                        selectedFile.path === f.path ? 'bg-white/10 border border-white/10' : 'hover:bg-white/5 border border-transparent'
+                        selectedFile?.path === f.path ? 'bg-white/10 border border-white/10' : 'hover:bg-white/5 border border-transparent'
                       }`}
                     >
                       <div className="flex items-center gap-2 mb-1">
@@ -336,10 +336,15 @@ export default function ReportScreen({ report, onBack }: { report: ReportData; o
                 </div>
                 {/* Diff viewer */}
                 <div className="rounded-xl overflow-hidden border border-white/5 bg-black/20">
-                  <DiffViewer filename={selectedFile.path.split('/').pop() ?? ''} />
+                  <DiffViewer
+                    filename={selectedFile?.path.split('/').pop() ?? ''}
+                    proposedPatch={selectedFile?.proposedPatch}
+                    previewSource={selectedFile?.previewSource}
+                    previewBranch={selectedFile?.previewBranch}
+                  />
                   <div className="px-4 py-3 border-t border-white/5">
                     <div className="text-xs text-zinc-500 mb-1">Impact Reason</div>
-                    <p className="text-xs text-zinc-400">{selectedFile.reason}</p>
+                    <p className="text-xs text-zinc-400">{selectedFile?.reason ?? 'No affected file details available.'}</p>
                   </div>
                 </div>
               </div>
@@ -474,7 +479,7 @@ export default function ReportScreen({ report, onBack }: { report: ReportData; o
   )
 }
 
-function ScoreBar({ label, value, color }: { label: string; value: number; color: string }) {
+function ScoreBar({ label, value, max, color }: { label: string; value: number; max: number; color: string }) {
   return (
     <div>
       <div className="flex justify-between items-baseline mb-1.5">
@@ -484,7 +489,7 @@ function ScoreBar({ label, value, color }: { label: string; value: number; color
       <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
         <div
           className="h-full rounded-full transition-all duration-1000 ease-out"
-          style={{ width: `${value * 4}%`, background: color, boxShadow: `0 0 8px ${color}66` }}
+          style={{ width: `${Math.max(0, Math.min(100, (value / max) * 100))}%`, background: color, boxShadow: `0 0 8px ${color}66` }}
         />
       </div>
     </div>

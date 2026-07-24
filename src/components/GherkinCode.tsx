@@ -73,6 +73,7 @@ export default function GherkinCode({ code, editable = false, onChange }: { code
         </pre>
         <textarea
           ref={editorRef}
+          wrap="off"
           value={code}
           onChange={(e) => onChange(e.target.value)}
           onScroll={() => {
@@ -81,7 +82,7 @@ export default function GherkinCode({ code, editable = false, onChange }: { code
             previewRef.current.scrollLeft = editorRef.current.scrollLeft
           }}
           spellCheck={false}
-          className="relative z-10 w-full h-full min-h-[340px] bg-transparent font-mono text-sm leading-relaxed outline-none resize-none p-4 text-transparent caret-ember overflow-auto"
+          className="relative z-10 w-full h-full min-h-[340px] bg-transparent font-mono text-sm leading-relaxed outline-none resize-none whitespace-pre py-4 pr-4 pl-[4rem] text-transparent caret-ember overflow-auto selection:bg-ember/20 selection:text-transparent"
           style={{ tabSize: 2, WebkitTextFillColor: 'transparent' }}
         />
       </div>

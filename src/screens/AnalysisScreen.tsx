@@ -1,43 +1,102 @@
-import { useState } from 'react'
-import { FileSearch, FileCode2, Play, Sparkles, Layers, Upload } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { FileSearch, FileCode2, Play, Sparkles, Upload } from 'lucide-react'
 import JiraCode from '../components/JiraCode'
 import GherkinCode from '../components/GherkinCode'
 import ScanBeam from '../components/ScanBeam'
+import { generateFeatureFileDraft } from '../api/backend'
 
-const sampleJira = `Ticket: PAY-1247
-Summary: Add multi-currency support to checkout flow
+const sampleJira = `Ticket: AI-101
+Summary: Analyze the Party Showcase registration flow
 
 Acceptance Criteria:
-- Customer can select currency (USD, EUR, GBP, JPY) at checkout
-- Order total displays converted amount with correct symbol
-- Payment authorization occurs in selected currency
-- Refunds issue in the original order currency
-- Revenue reports normalize to base currency (USD)`
+- User can create a new party and register attendees
+- Duplicate attendees are detected before persistence
+- Relationship data is saved with the correct party owner
+- Validation messages are shown for missing attendee details
+- Impact analysis highlights affected database and feature files`
 
-const sampleFeature = `Feature: Multi-currency checkout
-  As a customer
-  I want to pay in my local currency
-  So that I understand the exact amount I am charged
+const sampleFeature = `@party-registration @core
+Feature: Party registration
+  As an organizer
+  I want to create a party and register attendees
+  So that the party details and relationships are stored correctly
 
-  Scenario: Select EUR at checkout
-    Given the customer is on the checkout page
-    When they select "EUR" from the currency dropdown
-    Then the order total is displayed in Euros with the "€" symbol
-    And the exchange rate is fetched from the FX provider
+  @happy-path
+  Scenario: Register a new party with attendees
+    Given the organizer opens the party registration form
+    When they enter the party name "Summer Gala"
+    And they add attendee "Ava"
+    And they add attendee "Noah"
+    Then the party is saved successfully
+    And the attendees are linked to the new party
 
-  Scenario: Authorize payment in GBP
-    Given the customer has selected "GBP"
-    When they submit payment
-    Then the payment gateway authorizes the charge in "GBP"
-    And the order is persisted with currency_code = "GBP"`
+  @validation
+  Scenario: Prevent duplicate attendee names
+    Given the organizer has already added attendee "Mia"
+    When they try to add attendee "Mia" again
+    Then the system shows a duplicate attendee validation message
+    And the party is not saved until the issue is fixed`
 
-export default function AnalysisScreen({ onGenerate }: { onGenerate: () => void }) {
+export default function AnalysisScreen({
+  setupComplete,
+  onGenerate,
+}: {
+  setupComplete: boolean
+  onGenerate: (payload: { jiraContent: string; featureContent: string }) => Promise<void> | void
+}) {
   const [jira, setJira] = useState(sampleJira)
   const [feature, setFeature] = useState(sampleFeature)
   const [mode, setMode] = useState<'edit' | 'upload'>('edit')
   const [scanning, setScanning] = useState(false)
+  const [featureGenerating, setFeatureGenerating] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const mountedRef = useRef(true)
 
-  if (scanning) return <ScanBeam onComplete={onGenerate} />
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false
+    }
+  }, [])
+
+  const handleGenerate = () => {
+    if (scanning) {
+      return
+    }
+
+    setError(null)
+    setScanning(true)
+
+    void (async () => {
+      try {
+        await onGenerate({ jiraContent: jira, featureContent: feature })
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to generate report'
+        setError(message)
+      } finally {
+        if (mountedRef.current) {
+          setScanning(false)
+        }
+      }
+    })()
+  }
+
+  const handleFeatureGenerate = async () => {
+    setError(null)
+    setFeatureGenerating(true)
+
+    try {
+      const draft = await generateFeatureFileDraft({ jiraContent: jira })
+      setFeature(draft.featureContent.trim())
+      setMode('edit')
+    } catch {
+      setFeature(`@ai-generated\nFeature: Party registration\n  As an organizer\n  I want to create a party and register attendees\n  So that the party details and relationships are stored correctly\n\n  Scenario: Create a party with required details\n    Given the organizer opens the party registration form\n    When they enter a valid party name\n    And they add at least one attendee\n    Then the party is saved successfully\n\n  Scenario: Prevent duplicate attendees\n    Given the organizer has already added attendee "Mia"\n    When they try to add attendee "Mia" again\n    Then the system shows a duplicate attendee validation message`)
+      setMode('edit')
+    } finally {
+      setFeatureGenerating(false)
+    }
+  }
+
+  if (scanning) return <ScanBeam />
 
   return (
     <div className="max-w-5xl mx-auto px-6 animate-fade-in">
@@ -50,6 +109,11 @@ export default function AnalysisScreen({ onGenerate }: { onGenerate: () => void 
         <p className="text-zinc-500 mt-2 max-w-xl text-[15px] leading-relaxed">
           Provide the Jira requirement and updated Gherkin feature files. The AI engine compares them against your indexed knowledge base.
         </p>
+        {!setupComplete && (
+          <p className="mt-3 inline-flex rounded-full border border-amber2/20 bg-amber2/10 px-3 py-1 text-xs text-amber2">
+            Complete Setup Context first to enable report generation.
+          </p>
+        )}
       </header>
 
       <div className="grid lg:grid-cols-2 gap-4">
@@ -99,6 +163,15 @@ export default function AnalysisScreen({ onGenerate }: { onGenerate: () => void 
                 Upload
               </button>
             </div>
+            <button
+              onClick={() => { void handleFeatureGenerate() }}
+              disabled={featureGenerating || !jira.trim()}
+              className="btn-ghost-strong ml-3 px-3 py-1.5 text-xs"
+              title="Draft a feature file from the Jira requirement"
+            >
+              <Sparkles className={`w-3.5 h-3.5 ${featureGenerating ? 'animate-pulse' : ''}`} />
+              {featureGenerating ? 'Drafting...' : 'AI Generate'}
+            </button>
           </div>
 
           {mode === 'edit' ? (
@@ -123,32 +196,12 @@ export default function AnalysisScreen({ onGenerate }: { onGenerate: () => void 
       </div>
 
       {/* Action bar */}
-      <div className="panel p-4 mt-4 flex flex-wrap items-center justify-between gap-4 animate-slide-up stagger-3">
-        <div className="flex items-center gap-5">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-violet-400" />
-            </div>
-            <div>
-              <div className="text-[11px] text-zinc-600">Engine</div>
-              <div className="text-sm font-semibold text-zinc-200">GPT-4o · Deep</div>
-            </div>
-          </div>
-          <div className="w-px h-8 bg-white/5" />
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-ember/10 border border-ember/20 flex items-center justify-center">
-              <Layers className="w-4 h-4 text-ember" />
-            </div>
-            <div>
-              <div className="text-[11px] text-zinc-600">Indexed</div>
-              <div className="text-sm font-semibold text-zinc-200">1,284 files</div>
-            </div>
-          </div>
-        </div>
-        <button onClick={() => setScanning(true)} className="btn-primary text-base px-7 py-3">
+      <div className="panel p-4 mt-4 flex flex-wrap items-center justify-end gap-4 animate-slide-up stagger-3">
+        <button onClick={handleGenerate} disabled={!setupComplete || scanning} className="btn-primary text-base px-7 py-3 disabled:opacity-60 disabled:cursor-not-allowed">
           <Play className="w-4 h-4" /> Generate Report
         </button>
       </div>
+      {error && <p className="mt-3 text-sm text-ember">{error}</p>}
     </div>
   )
 }

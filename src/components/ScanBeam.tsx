@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Check, Loader as Loader2 } from 'lucide-react'
 
 export interface ScanStep {
@@ -14,26 +14,26 @@ const steps: ScanStep[] = [
   { label: 'Compiling Report', detail: 'Generating diff views and recommendations' },
 ]
 
-export default function ScanBeam({ onComplete }: { onComplete: () => void }) {
+export default function ScanBeam() {
   const [progress, setProgress] = useState(0)
   const [activeStep, setActiveStep] = useState(0)
-  const [durationMs] = useState(() => 5000 + Math.random() * 10000)
+  const durationMs = useMemo(() => 9000 + Math.random() * 6000, [])
 
   useEffect(() => {
     const start = Date.now()
     const interval = setInterval(() => {
       const elapsed = Date.now() - start
-      const next = Math.min((elapsed / durationMs) * 100, 100)
+      const rawProgress = Math.min((elapsed / durationMs) * 100, 100)
+      const next = rawProgress >= 95 ? 95 : rawProgress
 
       setProgress(next)
 
-      if (next >= 100) {
-          clearInterval(interval)
-          setTimeout(onComplete, 250)
-        }
+      if (next >= 95) {
+        clearInterval(interval)
+      }
     }, 80)
     return () => clearInterval(interval)
-  }, [durationMs, onComplete])
+  }, [durationMs])
 
   useEffect(() => {
     setActiveStep(Math.min(Math.floor((progress / 100) * steps.length), steps.length - 1))
@@ -63,7 +63,7 @@ export default function ScanBeam({ onComplete }: { onComplete: () => void }) {
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center">
             <div className="font-display text-3xl font-bold text-white tabular-nums">{Math.round(progress)}%</div>
-            <div className="text-xs text-ember font-mono mt-1 tracking-wider">SCANNING</div>
+            <div className="text-xs text-ember font-mono mt-1 tracking-wider">ANALYZING</div>
           </div>
         </div>
       </div>

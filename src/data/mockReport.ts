@@ -7,6 +7,10 @@ export interface AffectedFile {
   risk: RiskLevel
   reason: string
   linesChanged: number
+  proposedPatch?: string
+  previewContent?: string
+  previewSource?: string
+  previewBranch?: string
 }
 
 export interface DbChange {
@@ -55,53 +59,46 @@ export interface ReportData {
 }
 
 export const mockReport: ReportData = {
-  ticketId: 'PAY-1247',
-  ticketSummary: 'Add multi-currency support to checkout flow',
-  generatedAt: '2026-07-23 09:42 UTC',
+  ticketId: 'AI-101',
+  ticketSummary: 'Analyze the Party Showcase registration flow',
+  generatedAt: '2026-07-24 07:20 UTC',
   riskLevel: 'High',
-  riskScore: 78,
-  scoreBreakdown: { files: 32, database: 24, functional: 14, tests: 8 },
+  riskScore: 74,
+  scoreBreakdown: { files: 30, database: 20, functional: 20, tests: 20 },
   summary:
-    'Introducing multi-currency at checkout touches the payment authorization service, order persistence layer, and 3 customer-facing flows. Database schema requires a new currency_code column on orders and a new exchange_rate table, impacting existing foreign-key relationships. Regression risk is high due to legacy single-currency assumptions in 6 services.',
+    'The Party Showcase registration flow touches party creation, attendee validation, and persistence of related records. The report highlights the controller, service, and feature file updates needed to support duplicate attendee checks and stable registration behavior.',
   affectedFiles: [
-    { path: 'src/services/PaymentService.ts', type: 'service', change: 'modified', risk: 'High', reason: 'Core authorization logic branches on currency', linesChanged: 142 },
-    { path: 'src/controllers/CheckoutController.ts', type: 'controller', change: 'modified', risk: 'High', reason: 'Request validation accepts currency field', linesChanged: 58 },
-    { path: 'src/models/Order.ts', type: 'model', change: 'modified', risk: 'Medium', reason: 'New currency_code property + serialization', linesChanged: 34 },
-    { path: 'src/models/ExchangeRate.ts', type: 'model', change: 'added', risk: 'Medium', reason: 'New entity for FX rate lookups', linesChanged: 76 },
-    { path: 'src/config/currencies.ts', type: 'config', change: 'added', risk: 'Low', reason: 'Allowed currency list + rounding rules', linesChanged: 22 },
-    { path: 'db/migrations/0042_add_currency.sql', type: 'migration', change: 'added', risk: 'High', reason: 'ALTER orders + CREATE exchange_rate', linesChanged: 48 },
-    { path: 'tests/checkout.feature', type: 'feature', change: 'modified', risk: 'Medium', reason: 'New Gherkin scenarios for currency selection', linesChanged: 64 },
-    { path: 'tests/PaymentService.spec.ts', type: 'test', change: 'modified', risk: 'Medium', reason: 'Mock FX provider + multi-currency assertions', linesChanged: 91 },
+    { path: 'src/main/java/com/blumek/partyshowcase/service/PartyService.java', type: 'service', change: 'modified', risk: 'High', reason: 'Core registration logic branches on duplicate attendees', linesChanged: 126 },
+    { path: 'src/main/java/com/blumek/partyshowcase/controller/PartyController.java', type: 'controller', change: 'modified', risk: 'High', reason: 'Request validation accepts party and attendee payloads', linesChanged: 58 },
+    { path: 'src/main/java/com/blumek/partyshowcase/model/Party.java', type: 'model', change: 'modified', risk: 'Medium', reason: 'New relationship and validation fields', linesChanged: 34 },
+    { path: 'src/main/java/com/blumek/partyshowcase/model/Attendee.java', type: 'model', change: 'added', risk: 'Medium', reason: 'New entity for attendee lookups', linesChanged: 76 },
+    { path: 'src/main/resources/db/migration/V2__create_party_registration.sql', type: 'migration', change: 'added', risk: 'High', reason: 'CREATE parties + party_attendees tables', linesChanged: 48 },
+    { path: 'bootstrap/src/test/resources/stories/party-registration.feature', type: 'feature', change: 'modified', risk: 'Medium', reason: 'New Gherkin scenarios for Party Showcase registration', linesChanged: 64 },
+    { path: 'src/test/java/com/blumek/partyshowcase/service/PartyServiceTest.java', type: 'test', change: 'modified', risk: 'Medium', reason: 'Duplicate attendee validation + registration assertions', linesChanged: 91 },
   ],
   dbChanges: [
-    { table: 'orders', operation: 'ALTER', detail: 'ADD COLUMN currency_code VARCHAR(3) NOT NULL DEFAULT \'USD\'', risk: 'High', migration: '0042_add_currency.sql' },
-    { table: 'exchange_rates', operation: 'CREATE', detail: 'New table: id, base, quote, rate, effective_at', risk: 'Medium', migration: '0042_add_currency.sql' },
-    { table: 'orders', operation: 'INDEX', detail: 'CREATE INDEX idx_orders_currency ON orders(currency_code)', risk: 'Low', migration: '0042_add_currency.sql' },
-    { table: 'order_items', operation: 'ALTER', detail: 'ADD COLUMN unit_price_currency VARCHAR(3)', risk: 'Medium', migration: '0043_items_currency.sql' },
+    { table: 'parties', operation: 'CREATE', detail: 'CREATE TABLE parties (id UUID PRIMARY KEY, name VARCHAR(255) NOT NULL, owner_id UUID NOT NULL)', risk: 'High', migration: 'V2__create_party_registration.sql' },
+    { table: 'party_attendees', operation: 'CREATE', detail: 'CREATE TABLE party_attendees (party_id UUID NOT NULL, attendee_name VARCHAR(255) NOT NULL)', risk: 'Medium', migration: 'V2__create_party_registration.sql' },
+    { table: 'parties', operation: 'INDEX', detail: 'CREATE INDEX idx_parties_owner_id ON parties(owner_id)', risk: 'Low', migration: 'V2__create_party_registration.sql' },
   ],
   functionalAreas: [
-    { name: 'Checkout & Payment', impact: 'High', description: 'Currency selection, conversion display, and authorization in target currency', affectedFlows: ['Cart review', 'Payment submission', 'Receipt rendering'] },
-    { name: 'Order Management', impact: 'High', description: 'Persistence and retrieval of currency-aware orders', affectedFlows: ['Order history', 'Refund processing'] },
-    { name: 'Reporting & Analytics', impact: 'Medium', description: 'Revenue reports must normalize to base currency', affectedFlows: ['Daily revenue', 'Monthly reconciliation'] },
-    { name: 'Notifications', impact: 'Low', description: 'Email templates render currency symbol', affectedFlows: ['Order confirmation email'] },
+    { name: 'Party Registration', impact: 'High', description: 'Party creation, attendee registration, and validation for duplicate attendees', affectedFlows: ['Party creation', 'Attendee registration', 'Duplicate attendee validation'] },
+    { name: 'Notifications & Confirmation', impact: 'Medium', description: 'Success and error messaging should reflect the Party Showcase registration outcome', affectedFlows: ['Success banner', 'Validation errors', 'Audit trail'] },
   ],
   testCases: [
-    { id: 'TC-501', title: 'Checkout with EUR displays converted total', type: 'new', status: 'required', feature: 'checkout.feature' },
-    { id: 'TC-502', title: 'Payment authorization in non-USD currency', type: 'new', status: 'required', feature: 'checkout.feature' },
-    { id: 'TC-503', title: 'Refund issues in original currency', type: 'integration', status: 'required', feature: 'refund.feature' },
-    { id: 'TC-504', title: 'Legacy USD-only orders still render correctly', type: 'regression', status: 'required', feature: 'order_history.feature' },
-    { id: 'TC-505', title: 'Revenue report normalizes mixed currencies', type: 'regression', status: 'recommended', feature: 'reporting.feature' },
-    { id: 'TC-506', title: 'Exchange rate cache refresh on stale data', type: 'integration', status: 'recommended', feature: 'fx.feature' },
+    { id: 'TC-101', title: 'Party registration saves attendees successfully', type: 'new', status: 'required', feature: 'party-registration.feature' },
+    { id: 'TC-102', title: 'Duplicate attendee names are rejected', type: 'new', status: 'required', feature: 'party-registration.feature' },
+    { id: 'TC-103', title: 'Existing parties still render correctly', type: 'regression', status: 'required', feature: 'party-history.feature' },
+    { id: 'TC-104', title: 'Audit trail records attendee registration', type: 'integration', status: 'recommended', feature: 'party-registration.feature' },
   ],
   recommendations: [
-    { priority: 'P0', text: 'Backfill existing orders with currency_code = \'USD\' before deploying the migration to avoid NOT NULL constraint failures.', category: 'Database' },
-    { priority: 'P0', text: 'Add a fallback to USD when exchange_rates has no entry for a currency pair to prevent checkout failures.', category: 'Resilience' },
-    { priority: 'P1', text: 'Coordinate release with the FX rate provider SLA; cache rates with a 15-minute TTL.', category: 'Performance' },
-    { priority: 'P1', text: 'Update order confirmation email templates to render the correct currency symbol and code.', category: 'UX' },
-    { priority: 'P2', text: 'Document the new currency_code field in the public API spec and changelog.', category: 'Documentation' },
+    { priority: 'P0', text: 'Persist duplicate attendee validation before enabling the new registration flow.', category: 'Validation' },
+    { priority: 'P1', text: 'Add end-to-end coverage for party creation and attendee registration.', category: 'Testing' },
+    { priority: 'P1', text: 'Keep the Party Showcase confirmation and error messaging consistent across screens.', category: 'UX' },
+    { priority: 'P2', text: 'Document the new party and attendee schema in the API changelog.', category: 'Documentation' },
   ],
   dependencies: [
-    { name: '@payments/fx-provider', version: '^2.1.0', reason: 'New transitive dependency for live exchange rates' },
-    { name: 'decimal.js', version: '^10.4.3', reason: 'Precise currency conversion arithmetic' },
+    { name: 'spring-boot-starter-validation', version: '3.3.5', reason: 'Request validation for party registration inputs' },
+    { name: 'postgresql', version: '42.7.x', reason: 'Party Showcase persistence layer' },
   ],
 }
